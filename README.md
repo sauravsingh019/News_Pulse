@@ -1,5 +1,6 @@
 
 # News Pulse — Topic-Clustered News Timeline
+🌐 Live Demo: https://news-pulse-drab.vercel.app/
 
 News Pulse is a full-stack news aggregation platform that collects articles from multiple RSS feeds, automatically groups related stories into topic clusters using keyword-overlap clustering, and presents them through an interactive timeline interface.
 
