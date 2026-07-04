@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "build": "pip3 install -r ../scraper/requirements.txt || pip install -r ../scraper/requirements.txt || true"
+    "build": "pip3 install --break-system-packages -r ../scraper/requirements.txt || pip install --break-system-packages -r ../scraper/requirements.txt || true"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",
