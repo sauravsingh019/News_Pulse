@@ -1,280 +1,179 @@
-
 # News Pulse — Topic-Clustered News Timeline
 🌐 Live Demo: https://news-pulse-drab.vercel.app/
 
-News Pulse is a full-stack news aggregation platform that collects articles from multiple RSS feeds, automatically groups related stories into topic clusters using keyword-overlap clustering, and presents them through an interactive timeline interface.
-
-The project demonstrates end-to-end data ingestion, processing, clustering, API development, and visualization using a shared SQLite database.
+News Pulse is a full-stack news aggregation system built for the Xponentium India Internship assessment. It collects articles from multiple RSS feeds, groups related articles into topic clusters using keyword-overlap clustering, and visualizes them in an interactive timeline.
 
 ---
-
 # Project Structure
 
-```text
+```
 news-pulse/
 │
-├── scraper/      Python – RSS ingestion, article extraction & topic clustering
-├── backend/      Node.js + Express REST API
-├── frontend/     Next.js + React Timeline Dashboard
-└── database/     SQLite (shared storage)
+├── scraper/
+│   ├── run.py              # Runs the complete pipeline
+│   ├── ingest.py           # Fetches and normalizes RSS feeds
+│   ├── grouping.py         # Keyword-overlap topic clustering
+│   ├── db.py               # Database schema and operations
+│   ├── feeds.py            # RSS feed configuration
+│   └── requirements.txt
+│
+├── backend/
+│   ├── server.js           # Express server
+│   ├── routes/             # REST API endpoints
+│   ├── db.js               # SQLite connection
+│   ├── controllers/
+│   └── package.json
+│
+├── frontend/
+│   ├── app/                # Next.js App Router
+│   ├── components/         # Timeline and UI components
+│   ├── lib/                # API utilities
+│   ├── styles/
+│   └── package.json
+│
+└── README.md
 ```
 
 ---
 
-# System Architecture
+# Workflow
 
-```text
-                  ┌────────────────────┐
-                  │     RSS Feeds      │
-                  │ BBC • Guardian • AJ│
-                  └─────────┬──────────┘
-                            │
-                            ▼
-                scraper/ingest.py
-         Feed Parsing & Article Extraction
-                            │
-                            ▼
-                 scraper/grouping.py
-          Keyword Overlap Topic Clustering
-                            │
-                            ▼
-                 SQLite Database (WAL)
-                            ▲
-                ┌───────────┴───────────┐
-                │                       │
-                │                       │
-        Node.js REST API          Python Pipeline
-                │
-                ▼
-        Next.js Frontend Timeline
 ```
+               RSS Feeds
+      (BBC, Guardian, Al Jazeera)
+                    │
+                    ▼
+        Fetch & Normalize Articles
+            (Python Scraper)
+                    │
+                    ▼
+      Extract Full Article Content
+     (Trafilatura → BeautifulSoup)
+                    │
+                    ▼
+      Store Articles in SQLite (WAL)
+                    │
+                    ▼
+      Keyword Overlap Clustering
+          (Union-Find Algorithm)
+                    │
+                    ▼
+        Generate Topic Clusters
+                    │
+                    ▼
+        Node.js REST API Layer
+                    │
+                    ▼
+      Next.js Timeline Dashboard
+                    │
+                    ▼
+    Filter • Explore • Refresh News
+```
+
+### Workflow Summary
+
+1. The scraper fetches articles from multiple RSS feeds.
+2. Feed data is normalized into a common format.
+3. Full article content is extracted using **Trafilatura**, with **BeautifulSoup** as a fallback.
+4. Articles are stored in a shared SQLite database using SHA256-based deduplication.
+5. Related articles are grouped into topic clusters using keyword-overlap clustering.
+6. The Express backend exposes clustered data through REST APIs.
+7. The Next.js frontend displays clustered news on an interactive timeline with filtering and refresh functionality.
+
+# Setup Instructions
+
+## 1. Clone the repository
+
+```bash
+git clone <repository-url>
+cd news-pulse
+```
+
+## 2. Start the Scraper
+
+```bash
+cd scraper
+python -m venv venv
+source venv/bin/activate    # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+python run.py
+```
+
+## 3. Start the Backend
+
+```bash
+cd backend
+npm install
+cp .env.example .env
+npm start
+```
+
+## 4. Start the Frontend
+
+```bash
+cd frontend
+npm install
+cp .env.local.example .env.local
+npm run dev
+```
+
+The application will be available at:
+
+- Frontend: http://localhost:3000
+- Backend: http://localhost:5000
 
 ---
 
-# Application Workflow
+# Architecture Overview
 
-```text
+```
 RSS Feeds
     │
     ▼
-Fetch RSS Articles
-    │
-    ▼
-Normalize Feed Data
-    │
-    ▼
-Extract Full Article Content
-(Trafilatura → BeautifulSoup Fallback)
-    │
-    ▼
-Store Articles in SQLite
-(Deduplicated using SHA256(URL))
+Python Scraper
+(Feed Parsing + Article Extraction)
     │
     ▼
 Keyword Overlap Clustering
-(Union-Find Algorithm)
     │
     ▼
-Generate Topic Clusters
+SQLite Database (WAL)
     │
     ▼
-Expose Data via REST API
+Node.js REST API
     │
     ▼
-Interactive Timeline UI
+Next.js Timeline Dashboard
 ```
 
----
-
-# Technology Stack
-
-| Layer              | Technology                   |
-| ------------------ | ---------------------------- |
-| Frontend           | Next.js, React               |
-| Backend            | Node.js, Express             |
-| Scraper            | Python                       |
-| Database           | SQLite (WAL Mode)            |
-| Article Extraction | Trafilatura, BeautifulSoup   |
-| Clustering         | Keyword Overlap + Union Find |
+The scraper fetches and normalizes RSS articles, extracts full article content, groups related stories into topic clusters, and stores the processed data in a shared SQLite database. The Node.js backend exposes REST APIs, while the Next.js frontend visualizes clustered news on an interactive timeline.
 
 ---
 
-# Why SQLite?
+# Topic Grouping Approach
 
-Although the assessment allowed SQLite, PostgreSQL, or MongoDB, SQLite running in **Write-Ahead Logging (WAL)** mode was selected because it:
+This project uses **Keyword Overlap Clustering (Option A)**.
 
-* Requires zero infrastructure setup
-* Supports concurrent reads and writes
-* Simplifies local development and deployment
-* Is sufficient for the scale of this assessment
+Each article is tokenized using its headline and summary. After removing stopwords and short words, articles sharing **three or more meaningful keywords** are grouped into the same topic cluster. Clusters are built using a Union-Find algorithm, allowing transitive grouping across multiple related articles.
 
-Python owns the database schema, while the Node.js backend simply consumes the generated data.
+### Limitations
 
----
-
-# Data Processing Pipeline
-
-## 1. RSS Ingestion
-
-Articles are collected from:
-
-* BBC News
-* The Guardian
-* Al Jazeera
-
-These feeds intentionally use different RSS formats, allowing the ingestion layer to normalize varying schemas, date formats, and content structures.
+- Cannot detect semantic similarity or synonyms.
+- Articles describing the same event with different wording may not be grouped together.
+- An embedding or TF-IDF based approach would improve clustering accuracy but adds additional complexity.
 
 ---
 
-## 2. Full Article Extraction
+# News Sources
 
-Each article undergoes full-text extraction using:
+The application collects articles from the following RSS feeds:
 
-1. **Trafilatura** (primary extractor)
-2. **BeautifulSoup** (fallback)
+- BBC News
+- The Guardian
+- Al Jazeera
 
-Failed extractions are logged without interrupting the pipeline.
-
----
-
-## 3. Deduplication
-
-Each article is uniquely identified using:
-
-```
-SHA256(article_url)
-```
-
-The scraper performs:
-
-```
-INSERT OR IGNORE
-```
-
-making the pipeline completely re-runnable without inserting duplicate records.
-
----
-
-## 4. Topic Clustering
-
-The project implements **Option A – Keyword Overlap Clustering**.
-
-### Process
-
-* Headlines and summaries are tokenized
-* Stopwords are removed
-* Words shorter than three characters are discarded
-* Articles sharing **3 or more meaningful keywords** are grouped together
-
-A configurable threshold (`OVERLAP_THRESHOLD`) is used rather than hardcoded logic.
-
----
-
-### Why Keyword Overlap?
-
-Compared to TF-IDF or embedding-based approaches, keyword overlap provides:
-
-* Simplicity
-* Transparency
-* Easy debugging
-* Explainable clustering decisions
-
-This aligns well with the assessment's emphasis on correctness over complexity.
-
----
-
-### Union-Find Clustering
-
-Clusters are formed transitively using the Union-Find algorithm.
-
-Example:
-
-```
-Article A ↔ Article B
-Article B ↔ Article C
-
-↓
-
-Cluster:
-A, B, C
-```
-
-Even if Articles A and C share few direct keywords, they belong to the same topic through transitive relationships.
-
----
-
-### Current Limitation
-
-Keyword matching cannot detect semantic similarity.
-
-For example:
-
-```
-"Senate passes bill"
-
-and
-
-"Upper chamber approves legislation"
-```
-
-describe the same event but would not cluster because they share no literal keywords.
-
-Embedding-based approaches could improve this in future iterations.
-
----
-
-# Backend API
-
-| Endpoint                  | Description                       |
-| ------------------------- | --------------------------------- |
-| GET /clusters             | Returns all topic clusters        |
-| GET /clusters/:id         | Returns articles within a cluster |
-| GET /timeline             | Timeline visualization data       |
-| POST /ingest/trigger      | Starts ingestion pipeline         |
-| GET /ingest/status/:jobId | Returns ingestion progress        |
-
-The backend never performs clustering itself—it simply serves the latest processed results generated by the Python pipeline.
-
----
-
-# Frontend Features
-
-* Interactive timeline visualization
-* Topic cluster explorer
-* Article detail panel
-* Source-based filtering
-* Manual data refresh
-* Auto-refresh mode
-* Responsive dark-themed interface
-
-The timeline is implemented as a custom visualization rather than using a charting library, allowing greater flexibility and lightweight rendering.
-
----
-
-# Deployment Architecture
-
-| Component | Platform                           |
-| --------- | ---------------------------------- |
-| Frontend  | Vercel                             |
-| Backend   | Render / Railway                   |
-| Scraper   | Same server as Backend or Cron Job |
-| Database  | SQLite on Persistent Volume        |
-
-The scraper can be executed either manually through the API or periodically using a scheduled cron job.
-
----
-
-# Future Improvements
-
-* Semantic clustering using sentence embeddings
-* TF-IDF similarity scoring
-* Named Entity Recognition (NER)
-* Redis-based job queue
-* PostgreSQL migration for horizontal scaling
-* Scheduled background ingestion
-* Real-time updates using WebSockets
-
----
+These sources were selected because they use different RSS feed structures, allowing the scraper to demonstrate normalization across varying feed formats.
 
 
 
