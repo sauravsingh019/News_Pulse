@@ -1,0 +1,19 @@
+{
+  "name": "news-pulse-backend",
+  "version": "1.0.0",
+  "description": "News Pulse REST API - serves clusters/articles/timeline and triggers the Python ingest pipeline",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "build": "pip3 install -r ../scraper/requirements.txt || pip install -r ../scraper/requirements.txt || true"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "uuid": "^9.0.1"
+  }
+}
