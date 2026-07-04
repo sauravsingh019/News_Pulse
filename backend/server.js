@@ -8,11 +8,14 @@ const ingestRouter = require("./routes/ingest");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const CORS_ORIGIN = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim())
-  : "*";
 
-app.use(cors({ origin: CORS_ORIGIN }));
+let corsOrigin = "*";
+if (process.env.CORS_ORIGIN) {
+  const origins = process.env.CORS_ORIGIN.split(",").map((s) => s.trim());
+  corsOrigin = origins.includes("*") ? "*" : origins;
+}
+
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 
 // Basic request log -- helpful when reviewing a deployed instance's logs
